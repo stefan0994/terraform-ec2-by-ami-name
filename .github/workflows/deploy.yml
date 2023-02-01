@@ -1,0 +1,23 @@
+name: Deploy
+
+on:
+  - push
+
+jobs:
+  packer:
+    runs-on: ubuntu-latest
+    name: Run Packer
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup `packer`
+        uses: hashicorp/setup-packer@main
+        with:
+          version: "1.8.3"
+
+      - name: Run `packer init`
+        run: "packer init ./aws-ami.pkr.hcl"
+
+      - name: Run `packer build`
+        run: "packer build -var "region=us-east-1" ./aws-ami.pkr.hcl"
