@@ -12,6 +12,11 @@ variable "region" {
   default = "us-east-1"
 }
 
+variable "ami_name" {
+  type    = string
+  default = "my_ami"
+}
+
 data "amazon-ami" "az_ami" {
   filters = {
     virtualization-type = "hvm"
@@ -28,7 +33,7 @@ source "amazon-ebs" "basic-example" {
   source_ami    = data.amazon-ami.az_ami.id
   instance_type = "t2.micro"
   ssh_username  = "ec2-user"
-  ami_name      = "myami_{{timestamp}}"
+  ami_name      = "${var.ami_name}"
 }
 
 build {
