@@ -39,6 +39,8 @@ jobs:
     
 
   terraform:
+    needs: packer
+    
     name: 'Run Terraform'
     runs-on: ubuntu-latest
 
