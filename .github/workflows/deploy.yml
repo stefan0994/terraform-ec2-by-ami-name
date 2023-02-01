@@ -25,5 +25,68 @@ jobs:
       - name: Run packer init
         run: "packer init ./aws-ami.pkr.hcl"
 
-      - name: Run packer build
+      - name: Run packer build Dev
+        if: github.ref == 'refs/heads/dev'
         run: "packer build -var \"region=us-east-1\" -var \"ami_name=myami_${{github.sha}}\" ./aws-ami.pkr.hcl"
+
+      - name: Run packer build QA
+        if: github.ref == 'refs/heads/qa'
+        run: "packer build -var \"region=us-east-2\" -var \"ami_name=myami_${{github.sha}}\" ./aws-ami.pkr.hcl"
+
+      - name: Run packer build Prod
+        if: github.ref == 'refs/heads/master'
+        run: "packer build -var \"region=us-west-2\" -var \"ami_name=myami_${{github.sha}}\" ./aws-ami.pkr.hcl"
+    
+
+  terraform:
+    name: 'Run Terraform'
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.1.9
+
+    - uses: ikambarov/terraform-backend-action@master
+      with:
+        s3-bucket-name: ${{ secrets.BUCKET_NAME }}
+        s3-bucket-region: "us-east-1"
+
+    - name: Verify Backend.tf
+      run: |
+        ls -R
+        cat backend.tf
+
+    - name: Debug
+      run: echo "$GITHUB_REF"
+
+    - name: Terraform Apply Dev
+      if: github.ref == 'refs/heads/dev'
+      run: make dev
+      env:
+        TF_VAR_environment: "dev"
+        TF_VAR_region: "us-east-1"
+        TF_VAR_ami_name: "myami_${{github.sha}}"
+
+    - name: Terraform Apply QA
+      if: github.ref == 'refs/heads/qa'
+      run: make qa
+      env:
+        TF_VAR_environment: "qa"
+        TF_VAR_region: "us-east-2"
+        TF_VAR_ami_name: "myami_${{github.sha}}"
+        
+    - name: Terraform Apply Prod
+      if: github.ref == 'refs/heads/master'
+      run: make prod
+      env:
+        TF_VAR_environment: "prod"
+        TF_VAR_region: "us-west-2"
+        TF_VAR_ami_name: "myami_${{github.sha}}"
